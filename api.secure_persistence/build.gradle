@@ -1,0 +1,2 @@
+// Everything common (java toolchain, Boot BOM, starters, JJWT, MapStruct,
+// Lombok, test stack) comes from the root build.gradle `subprojects` block.

@@ -1,0 +1,82 @@
+// Bimodular build, single dependency direction:
+//
+//   api.main                (front + primary: Spring Boot entry point,
+//                            application.yaml, domain, sockets)
+//        |
+//        |  implementation project(':api.secure_persistence')
+//        v
+//   api.secure_persistence  (auth/JWT + DTO contract + persistence config)
+//
+// The module named here must never reference the other's internals -- that
+// would create a cycle. They meet at AuthUserService (UserDetailsService).
+//
+// Plugin versions are declared once, here, with `apply false`. Everything both
+// modules share (java toolchain, Boot BOM, starters, JJWT, MapStruct, Lombok,
+// test stack) lives in the subprojects block below, so each module's own
+// build.gradle only states what makes it different.
+//
+// There is no JPMS here: a Spring Boot fat jar keeps its dependencies as nested
+// jars, which the module path cannot reference, so a named module could never
+// be resolved at runtime. The boundary between the two modules is therefore
+// enforced by ArchUnit (ModuleBoundaryArchTest) instead of module-info.java.
+
+plugins {
+	id 'org.springframework.boot' version '3.5.16' apply false
+	id 'io.spring.dependency-management' version '1.1.7' apply false
+}
+
+group = 'com.web'
+version = '0.0.1-SNAPSHOT'
+
+subprojects {
+	apply plugin: 'java'
+	apply plugin: 'io.spring.dependency-management'
+
+	java {
+		toolchain {
+			languageVersion = JavaLanguageVersion.of(17)
+		}
+	}
+
+	dependencyManagement {
+		imports {
+			mavenBom 'org.springframework.boot:spring-boot-dependencies:3.5.16'
+		}
+	}
+
+	repositories {
+		mavenCentral()
+	}
+
+	dependencies {
+		implementation 'org.springframework.boot:spring-boot-starter-web'
+		implementation 'org.springframework.boot:spring-boot-starter-security'
+		implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+		implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+		runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+		runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+		runtimeOnly 'org.postgresql:postgresql'
+
+		compileOnly 'org.projectlombok:lombok'
+		annotationProcessor 'org.projectlombok:lombok'
+		testAnnotationProcessor 'org.projectlombok:lombok'
+
+		implementation 'org.mapstruct:mapstruct:1.6.3'
+		annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
+
+		// 2. El puente de unión obligatorio entre Lombok y MapStruct
+		// Este puente le enseña a MapStruct a entender los Builders y constructores de Lombok
+		annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+
+		testImplementation 'org.springframework.boot:spring-boot-starter-test'
+		// Enforces the boundary that module-info.java used to enforce: the
+		// security module must not depend on the domain.
+		testImplementation 'com.tngtech.archunit:archunit-junit5:1.4.1'
+		testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	}
+
+	tasks.named('test') {
+		useJUnitPlatform()
+	}
+}

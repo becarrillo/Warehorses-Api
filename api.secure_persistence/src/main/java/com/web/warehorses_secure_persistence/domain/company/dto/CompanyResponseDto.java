@@ -1,0 +1,10 @@
+package com.web.warehorses_secure_persistence.domain.company.dto;
+
+import lombok.Builder;
+
+@Builder
+public record CompanyResponseDto(String nit,
+                                 String name,
+                                 String email,
+                                 String address) {
+}

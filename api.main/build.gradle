@@ -1,0 +1,22 @@
+// Everything common (java toolchain, Boot BOM, starters, JJWT, MapStruct,
+// Lombok, test stack) comes from the root build.gradle `subprojects` block.
+// Only what makes this module different is declared here.
+
+plugins {
+	id 'org.springframework.boot'
+}
+
+dependencies {
+	// The one-way edge into the lower module, which owns the domain, the auth
+	// contract and the JWT plumbing this module's controllers consume.
+	implementation project(':api.secure_persistence')
+
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+	implementation 'com.corundumstudio.socketio:netty-socketio:2.0.13'
+
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+}
+
+tasks.named('bootJar') {
+	mainClass = 'com.web.WarehousesApplication'
+}

@@ -1,0 +1,3 @@
+rootProject.name = 'warehorses-api'
+include 'api.main'
+include 'api.secure_persistence'
